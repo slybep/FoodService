@@ -8,6 +8,6 @@ namespace AuthorizationAPI.Models
         public DateTime CreatedAt { get; set; }
         public string Email {get; set;} = string.Empty; 
         public string PasswordHash {get; set;} = string.Empty;
-        public ICollection<UserRole> UserRole { get; set; } = new HashSet<UserRole>();
+        public ICollection<Role> Roles { get; set; } = [];
     }
 }

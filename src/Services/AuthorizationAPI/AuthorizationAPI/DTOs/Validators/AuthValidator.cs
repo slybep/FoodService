@@ -8,7 +8,8 @@ namespace AuthorizationAPI.DTOs.Validators
         {
             RuleFor(x => x.Email)
                 .NotEmpty().WithMessage("Email is required")
-                .MaximumLength(50).WithMessage("Email must not exceed 50 characters");
+                .MaximumLength(50).WithMessage("Email must not exceed 50 characters")
+                .EmailAddress().WithMessage("Invalid email format");
 
 
             RuleFor(x => x.Password)

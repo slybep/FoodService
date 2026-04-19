@@ -11,7 +11,7 @@ public class UserRepository : IUserRepository
     }
 
     public async Task<bool> EmailExistsAsync(string email, CancellationToken ct)
-        => await _context.Users.AnyAsync(u => u.Email == email, ct);
+        => await _context.Users.AsNoTracking().AnyAsync(u => u.Email == email, ct);
 
     public async Task<User?> GetByEmailAsync(string email, CancellationToken ct)
         => await _context.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
@@ -22,6 +22,6 @@ public class UserRepository : IUserRepository
     public async Task SaveChangesAsync(CancellationToken ct)
         => await _context.SaveChangesAsync(ct);
     public async Task<User?> FindByEmail(string email, CancellationToken ct)
-        => await _context.Users.FirstOrDefaultAsync();
+        => await _context.Users.AsNoTracking().FirstOrDefaultAsync(e => e.Email == email, ct);
 
 }

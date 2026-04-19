@@ -1,6 +1,7 @@
 ﻿using AuthorizationAPI.Abstractions;
 using AuthorizationAPI.DTOs;
 using AuthorizationAPI.Models;
+using AuthorizationAPI.Models.Enums;
 using FluentValidation;
 
 
@@ -12,15 +13,21 @@ namespace AuthorizationAPI.Services
         private readonly IUserRepository _userRepository;
         private readonly IValidator<AuthRequest> _loginValidator;
         private readonly IValidator<RegRequest> _regvalidator;
+        private readonly IPasswordHasher _passwordHasher;
+        private readonly IUserRoleRepository _userRole;
         public AuthService(IUserRepository repostiory, 
             IJwtService jwt, 
             IValidator<AuthRequest> loginValidator, 
-            IValidator<RegRequest> regValidator)
+            IValidator<RegRequest> regValidator,
+            IPasswordHasher passwordHasher,
+            IUserRoleRepository userRole)
         {
             _loginValidator = loginValidator;
             _regvalidator = regValidator;
             _userRepository = repostiory;
             _jwt = jwt;
+            _passwordHasher = passwordHasher;
+            _userRole = userRole;
         }
         public async Task<AuthResponse?> RegisterAsync(RegRequest request, CancellationToken ct)
         {
@@ -35,17 +42,27 @@ namespace AuthorizationAPI.Services
                 Id = Guid.NewGuid(),
                 Email = normalizedEmail,
                 CreatedAt = DateTime.UtcNow,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
+                PasswordHash = _passwordHasher.Generate(request.Password)
             };
             await _userRepository.AddAsync(user, ct);
             await _userRepository.SaveChangesAsync(ct);
-            var token = _jwt.GenerateToken(user);
+            var userRole = (int)Roles.User;
 
+            var userAndRole = new UserRole
+            {
+                UserId = user.Id,
+                RoleId = userRole
+            };
+
+            await _userRole.AddAsync(userAndRole, ct);
+            await _userRole.SaveChangesAsync(ct);
+            
+            var token = await _jwt.GenerateToken(user);
             return new AuthResponse
             {
                 Token = token,
                 UserId = user.Id,
-                Email = user.Email
+                Email = user.Email,
             };
         }
         public async Task<AuthResponse?> LogInAsync(AuthRequest request, CancellationToken ct)
@@ -58,17 +75,19 @@ namespace AuthorizationAPI.Services
             {
                 return null;
             }
-            if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            if (!_passwordHasher.Verify(request.Password, user.PasswordHash))
             {
                 return null;
             }
-            var token = _jwt.GenerateToken(user);
-
+            var token = await _jwt.GenerateToken(user);
+            var userRoles = await _userRole.GetByUserIdAsync(user.Id);
+            var roleNames = userRoles.Select(ur => ur.Role.Name).ToList();
             return new AuthResponse
             {
                 UserId = user.Id,
                 Token = token,
-                Email = user.Email
+                Email = user.Email,
+                Role = roleNames
             };
         }
 

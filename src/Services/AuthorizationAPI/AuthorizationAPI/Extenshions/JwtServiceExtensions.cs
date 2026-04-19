@@ -27,12 +27,20 @@ namespace AuthorizationAPI.Extenshions
                 {
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-                    ValidateIssuer = true,
+                    ValidateIssuer = false,
                     ValidIssuer = jwtSettings["Issuer"],
-                    ValidateAudience = true,
+                    ValidateAudience = false,
                     ValidAudience = jwtSettings["Audience"],
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
+                };
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        context.Token = context.Request.Cookies["Es-cookies"];
+                        return Task.CompletedTask;
+                    }
                 };
             });
 

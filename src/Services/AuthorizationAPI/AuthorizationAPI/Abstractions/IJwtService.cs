@@ -4,7 +4,7 @@ namespace AuthorizationAPI.Abstractions
 {
     public interface IJwtService
     {
-        string GenerateToken(User user);
+        Task<string> GenerateToken(User user);
         string? ValidateToken(string token);
     }
 }
