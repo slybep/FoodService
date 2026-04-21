@@ -23,18 +23,26 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
 
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IValidator<AuthRequest>, AuthValidator>();
 builder.Services.AddScoped<IValidator<RegRequest>, RegValidator>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserProfileServiceClient, UserProfileServiceClient>();
+builder.Services.AddScoped<ICookieService, CookieService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IUserRoleRepository, UserRoleRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 
+builder.Services.AddHttpClient<IUserProfileServiceClient, UserProfileServiceClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["Services:UserProfileService"]);
+    client.DefaultRequestHeaders.Add("Api-Key", builder.Configuration["InternalApiKey"]);
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
 
 
 var app = builder.Build();
@@ -45,15 +53,12 @@ using (var scope = app.Services.CreateScope())
     var context = services.GetRequiredService<AuthDbContext>();
     context.Database.Migrate();
 }
-
-
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+app.UseCors("DevCors");
 app.UseHttpsRedirection();
 
 app.UseAuthentication();

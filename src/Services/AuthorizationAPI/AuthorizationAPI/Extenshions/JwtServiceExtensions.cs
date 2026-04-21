@@ -14,7 +14,7 @@ namespace AuthorizationAPI.Extenshions
         public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration, string sectionName)
         {
             var jwtSettings = configuration.GetSection(sectionName);
-            var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException($"JWT SecretKey not configured in section '{sectionName}'");
+            var secretKey = "secretkeysecretkeysecretkeysecretkeysecretkeysecretkey";
 
             services.AddAuthentication(options =>
             {
@@ -28,9 +28,7 @@ namespace AuthorizationAPI.Extenshions
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
                     ValidateIssuer = false,
-                    ValidIssuer = jwtSettings["Issuer"],
                     ValidateAudience = false,
-                    ValidAudience = jwtSettings["Audience"],
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
                 };
@@ -38,7 +36,13 @@ namespace AuthorizationAPI.Extenshions
                 {
                     OnMessageReceived = context =>
                     {
-                        context.Token = context.Request.Cookies["Es-cookies"];
+                        var rawToken = context.Request.Cookies["Es-cookies"];
+                        if (!string.IsNullOrEmpty(rawToken))
+                        {
+                            // Декодируем URL-encoded символы
+                            context.Token = Uri.UnescapeDataString(rawToken);
+                            Console.WriteLine($"Token length: {context.Token.Length}");
+                        }
                         return Task.CompletedTask;
                     }
                 };

@@ -15,12 +15,16 @@ namespace AuthorizationAPI.Services
         private readonly IValidator<RegRequest> _regvalidator;
         private readonly IPasswordHasher _passwordHasher;
         private readonly IUserRoleRepository _userRole;
+        private readonly IUserProfileServiceClient _userServiceClient;
+        private readonly ICookieService _cookieService;
         public AuthService(IUserRepository repostiory, 
             IJwtService jwt, 
             IValidator<AuthRequest> loginValidator, 
             IValidator<RegRequest> regValidator,
             IPasswordHasher passwordHasher,
-            IUserRoleRepository userRole)
+            IUserRoleRepository userRole,
+            IUserProfileServiceClient userserviceClient,
+            ICookieService cookieService)
         {
             _loginValidator = loginValidator;
             _regvalidator = regValidator;
@@ -28,6 +32,8 @@ namespace AuthorizationAPI.Services
             _jwt = jwt;
             _passwordHasher = passwordHasher;
             _userRole = userRole;
+            _userServiceClient = userserviceClient;
+            _cookieService = cookieService;
         }
         public async Task<AuthResponse?> RegisterAsync(RegRequest request, CancellationToken ct)
         {
@@ -56,8 +62,17 @@ namespace AuthorizationAPI.Services
 
             await _userRole.AddAsync(userAndRole, ct);
             await _userRole.SaveChangesAsync(ct);
-            
+
+            try
+            {
+               var result = await _userServiceClient.CreateProfileAsync(user.Id, ct);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{ex}, Profile creation failed for user UserId, {user.Id}");
+            }
             var token = await _jwt.GenerateToken(user);
+            _cookieService.SetAuthCookie(token);
             return new AuthResponse
             {
                 Token = token,
@@ -79,7 +94,9 @@ namespace AuthorizationAPI.Services
             {
                 return null;
             }
+            
             var token = await _jwt.GenerateToken(user);
+            _cookieService.SetAuthCookie(token);
             var userRoles = await _userRole.GetByUserIdAsync(user.Id);
             var roleNames = userRoles.Select(ur => ur.Role.Name).ToList();
             return new AuthResponse

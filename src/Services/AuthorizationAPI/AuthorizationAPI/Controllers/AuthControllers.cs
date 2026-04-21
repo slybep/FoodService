@@ -1,5 +1,6 @@
 ﻿using AuthorizationAPI.Abstractions;
 using AuthorizationAPI.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -38,6 +39,11 @@ namespace AuthorizationAPI.Controllers
             }
             
             return Ok(result);
+        }
+        [HttpGet]
+        public async Task<ActionResult> Get ()
+        {
+            return Ok();
         }
     }
 }

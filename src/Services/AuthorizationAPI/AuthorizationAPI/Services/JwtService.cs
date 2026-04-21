@@ -23,9 +23,9 @@ public class JwtService : IJwtService
         var userRoles = await _userRoleRepository.GetByUserIdAsync(user.Id);
 
         var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
-        var issuer = jwtSettings["Issuer"] ?? throw new InvalidOperationException("JWT Issuer not configured");
-        var audience = jwtSettings["Audience"] ?? throw new InvalidOperationException("JWT Audience not configured");
+        var secretKey = jwtSettings["SecretKey"];
+        var issuer = jwtSettings["Issuer"];
+        var audience = jwtSettings["Audience"]; 
         var expirationMinutes = int.Parse(jwtSettings["ExpirationMinutes"] ?? "60");
 
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
@@ -67,12 +67,10 @@ public class JwtService : IJwtService
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-            ValidateIssuer = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidateAudience = true,
-            ValidAudience = jwtSettings["Audience"],
+            ValidateIssuer = false,
+            ValidateAudience = false,
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.FromMinutes(5)
         };
 
         try
